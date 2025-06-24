@@ -24,4 +24,9 @@ jobs:
         run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
       - name: RunStaticcheck
-        run: staticcheck ./...
+        run:
+          for modfile in $(find . -name go.mod); do
+            dir=$(dirname "$modfile")  
+            echo "==> Checking module in $dir"
+            (cd "$dir" && staticcheck ./...)
+          done
