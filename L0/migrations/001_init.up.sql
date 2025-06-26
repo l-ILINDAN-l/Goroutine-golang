@@ -1,5 +1,5 @@
 CREATE TABLE orders (
-    order_uid VARCHAR(255) PRIMARY KEY,
+    order_uid UUID PRIMARY KEY,
     track_number VARCHAR(255),
     entry VARCHAR(12),
     locale VARCHAR(6),
@@ -13,7 +13,7 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE deliveries (
-    order_uid VARCHAR(255) NOT NULL PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid UUID NOT NULL PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
     name VARCHAR(255),
     phone VARCHAR(30),
     zip VARCHAR(20),
@@ -24,7 +24,7 @@ CREATE TABLE deliveries (
 );
 
 CREATE TABLE payments (
-    order_uid VARCHAR(255) NOT NULL PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid UUID NOT NULL PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
     transaction VARCHAR(255),
     request_id VARCHAR(255),
     currency VARCHAR(3),
@@ -39,7 +39,7 @@ CREATE TABLE payments (
 
 CREATE TABLE items (
     chrt_id BIGINT PRIMARY KEY,
-    order_uid VARCHAR(255) NOT NULL REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid UUID NOT NULL REFERENCES orders(order_uid) ON DELETE CASCADE,
     track_number VARCHAR(255),
     price DECIMAL(12,2),
     rid VARCHAR(255),
