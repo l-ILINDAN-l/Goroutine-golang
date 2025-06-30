@@ -1,4 +1,4 @@
-package cashe
+package cache
 
 import (
 	"L0/internal/domain"
