@@ -1,8 +1,8 @@
 package config
 
 import (
-	"database/sql"
-	"github.com/spf13/viper"
+// "database/sql"
+// "github.com/spf13/viper"
 )
 
 type DSN string
@@ -37,6 +37,4 @@ type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 }
 
-func NewConfig() *Config {
-
-}
+//func NewConfig() *Config {}
