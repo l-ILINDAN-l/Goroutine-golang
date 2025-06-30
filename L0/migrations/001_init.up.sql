@@ -13,7 +13,7 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE deliveries (
-    order_uid UUID NOT NULL PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid UUID PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
     name VARCHAR(255),
     phone VARCHAR(30),
     zip VARCHAR(20),
@@ -24,7 +24,7 @@ CREATE TABLE deliveries (
 );
 
 CREATE TABLE payments (
-    order_uid UUID NOT NULL PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid UUID PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
     transaction VARCHAR(255),
     request_id VARCHAR(255),
     currency VARCHAR(3),
