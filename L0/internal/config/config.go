@@ -1,8 +1,9 @@
 package config
 
 import (
-// "database/sql"
-// "github.com/spf13/viper"
+	// "database/sql"
+	"github.com/spf13/viper"
+	"log"
 )
 
 type DSN string
@@ -33,8 +34,25 @@ type ServerConfig struct {
 type Config struct {
 	Postgres PostgresConfig `yaml:"postgres"`
 	Redis    RedisConfig    `yaml:"redis"`
-	Kafka    KafkaConfig    `yaml:"kafka"`
+	Kafka    KafkaConfig    `yaml:"tkafka"`
 	Server   ServerConfig   `yaml:"server"`
 }
 
-//func NewConfig() *Config {}
+func MustLoad() *Config {
+	v := viper.New()
+
+	v.AutomaticEnv()
+	v.AddConfigPath("./configs") // Указываем путь
+	v.SetConfigName("config")    // Указываем имя файла без расширения
+
+	if err := v.ReadInConfig(); err != nil {
+		log.Fatalf("error reading config file: %v", err)
+	}
+
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		log.Fatalf("error unmarshaling config: %v", err)
+	}
+
+	return &cfg
+}

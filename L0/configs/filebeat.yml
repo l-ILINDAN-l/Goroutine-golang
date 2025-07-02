@@ -1,0 +1,13 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+
+processors:
+  - add_docker_metadata: {}
+  - decode_json_fields:
+      fields: [ "message" ]
+      target: "json"
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]

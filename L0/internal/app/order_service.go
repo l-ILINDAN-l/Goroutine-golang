@@ -2,15 +2,15 @@ package app
 
 import (
 	"L0/internal/domain"
+	"L0/internal/metrics"
 	"context"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type OrderService struct {
-	repo  domain.OrderRepository
-	cache domain.Cache
-
+	repo   domain.OrderRepository
+	cache  domain.Cache
 	logger *logrus.Entry
 }
 
@@ -31,6 +31,7 @@ func (s *OrderService) ProcessNewOrder(ctx context.Context, order *domain.Order)
 		return err
 	}
 	log.Info("saved order successfully")
+	metrics.OrdersProcessedTotal.Inc()
 	return nil
 }
 

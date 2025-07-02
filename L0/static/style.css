@@ -1,0 +1,73 @@
+/* Подключаем кастомные шрифты */
+@font-face {
+    font-family: 'CoFo Sans';
+    src: url('fonts/CoFoSans-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'CoFo Pixel';
+    src: url('fonts/CoFoSansPixel-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* Основные стили */
+body {
+    font-family: 'CoFo Sans', sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    padding: 2em;
+}
+
+h1 {
+    font-family: 'CoFo Sans', sans-serif;
+    color: #7000ff;
+    font-size: 2.5em;
+}
+
+h3 {
+    font-family: 'CoFo Sans', sans-serif;
+    color: rgba(112, 0, 255, 0.7);
+}
+
+input[type="text"] {
+    font-family: 'CoFo Pixel', monospace;
+    padding: 10px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    width: 300px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-family: 'CoFo Sans', sans-serif;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+button:not(:disabled) {
+    background-color: #7000ff;
+}
+
+button:not(:disabled):hover {
+    background-color: #5a00d1;
+}
+
+pre {
+    font-family: 'CoFo Pixel', monospace;
+    background-color: #eee;
+    padding: 1em;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}

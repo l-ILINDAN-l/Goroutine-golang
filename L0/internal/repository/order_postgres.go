@@ -355,3 +355,20 @@ func (r *PostgresRepository) GetLatest(ctx context.Context, limit uint) ([]*doma
 	r.logger.Infof("cache warming complete. Fetched %d orders.", len(orders))
 	return orders, nil
 }
+
+func (r *PostgresRepository) Close() {
+	if err := r.lookupDB.Close(); err != nil {
+		r.logger.Errorf("error closing lookup db: %v", err)
+	}
+	
+	for key, conn := range r.shards {
+		if err := conn.Primary.Close(); err != nil {
+			r.logger.Errorf("error closing primary for shard %s: %v", key, err)
+		}
+		for _, replica := range conn.Replicas {
+			if err := replica.Close(); err != nil {
+				r.logger.Errorf("error closing replica for shard %s: %v", key, err)
+			}
+		}
+	}
+}

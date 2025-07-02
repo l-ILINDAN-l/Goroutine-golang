@@ -2,6 +2,7 @@ package cache
 
 import (
 	"L0/internal/domain"
+	"L0/internal/metrics"
 	"context"
 	"encoding/json"
 	"errors"
@@ -66,10 +67,12 @@ func (c *RedisCache) GetByUID(ctx context.Context, uid uuid.UUID) (*domain.Order
 			log.Errorf("failed to unmarshal order: %v", err)
 			return c.getOrderFromDatabaseAndCache(ctx, uid, log)
 		}
+		metrics.CacheHitTotal.Inc()
 		return &order, nil
 	} else if !errors.Is(err, redis.Nil) {
 		log.Errorf("failed to get order: %v, falling back to database", err)
 	} else {
+		metrics.CacheMissTotal.Inc()
 		log.Info("cache miss, falling back to database")
 	}
 
@@ -145,4 +148,10 @@ func (c *RedisCache) Get(ctx context.Context, uid uuid.UUID) (*domain.Order, boo
 	// Настоящая ошибка Redis
 	log.Errorf("failed to get from cache: %v", err)
 	return nil, false, err
+}
+
+func (c *RedisCache) Close() {
+	if err := c.redisClient.Close(); err != nil {
+		c.logger.Errorf("error closing redis client: %v", err)
+	}
 }
