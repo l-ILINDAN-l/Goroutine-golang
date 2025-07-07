@@ -1,5 +1,5 @@
 CREATE TABLE orders (
-    order_uid UUID PRIMARY KEY,
+    order_uid VARCHAR(19) PRIMARY KEY, -- Раз в model.json 19 символов, а не 36
     track_number VARCHAR(255),
     entry VARCHAR(12),
     locale VARCHAR(6),
@@ -13,7 +13,7 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE deliveries (
-    order_uid UUID PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid VARCHAR(19) PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
     name VARCHAR(255),
     phone VARCHAR(30),
     zip VARCHAR(20),
@@ -24,29 +24,29 @@ CREATE TABLE deliveries (
 );
 
 CREATE TABLE payments (
-    order_uid UUID PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid VARCHAR(19) PRIMARY KEY REFERENCES orders(order_uid) ON DELETE CASCADE,
     transaction VARCHAR(255),
     request_id VARCHAR(255),
     currency VARCHAR(3),
     provider VARCHAR(255),
-    amount DECIMAL(12, 2),
+    amount BIGINT,
     payment_dt BIGINT,
     bank VARCHAR(255),
-    delivery_cost DECIMAL(12,2),
-    goods_total DECIMAL(12, 2),
-    custom_fee DECIMAL(12, 2)
+    delivery_cost BIGINT,
+    goods_total BIGINT,
+    custom_fee BIGINT
 );
 
 CREATE TABLE items (
     chrt_id BIGINT PRIMARY KEY,
-    order_uid UUID NOT NULL REFERENCES orders(order_uid) ON DELETE CASCADE,
+    order_uid VARCHAR(19) NOT NULL REFERENCES orders(order_uid) ON DELETE CASCADE,
     track_number VARCHAR(255),
-    price DECIMAL(12,2),
+    price BIGINT,
     rid VARCHAR(255),
     name TEXT,
     sale SMALLINT,
     size VARCHAR(50),
-    total_price DECIMAL(12,2),
+    total_price BIGINT,
     nm_id BIGINT,
     brand VARCHAR(255),
     status SMALLINT
