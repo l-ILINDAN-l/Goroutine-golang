@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"time"
@@ -27,11 +26,11 @@ func NewRedisCache(repo domain.OrderRepository, redisClient *redis.Client, logge
 	}
 }
 
-func createKey(uid uuid.UUID) string {
+func createKey(uid string) string {
 	return fmt.Sprintf("order:%v", uid)
 }
 
-func (c *RedisCache) getOrderFromDatabaseAndCache(ctx context.Context, uid uuid.UUID, log *logrus.Entry) (*domain.Order, error) {
+func (c *RedisCache) getOrderFromDatabaseAndCache(ctx context.Context, uid string, log *logrus.Entry) (*domain.Order, error) {
 	order, err := c.nextLayer.GetByUID(ctx, uid)
 	if err != nil {
 		log.Errorf("failed to get order: %v", err)
@@ -51,7 +50,7 @@ func (c *RedisCache) getOrderFromDatabaseAndCache(ctx context.Context, uid uuid.
 	return order, nil
 }
 
-func (c *RedisCache) GetByUID(ctx context.Context, uid uuid.UUID) (*domain.Order, error) {
+func (c *RedisCache) GetByUID(ctx context.Context, uid string) (*domain.Order, error) {
 	log := c.logger.WithFields(logrus.Fields{
 		"uid": uid,
 	})
@@ -106,7 +105,7 @@ func (c *RedisCache) GetLatest(ctx context.Context, limit uint) ([]*domain.Order
 }
 
 func (c *RedisCache) Set(ctx context.Context, order *domain.Order) error {
-	log := c.logger.WithField("order_uid", order.OrderUID.String())
+	log := c.logger.WithField("order_uid", order.OrderUID)
 
 	jsonOrderBytes, err := json.Marshal(order)
 	if err != nil {
@@ -124,8 +123,8 @@ func (c *RedisCache) Set(ctx context.Context, order *domain.Order) error {
 	return nil
 }
 
-func (c *RedisCache) Get(ctx context.Context, uid uuid.UUID) (*domain.Order, bool, error) {
-	log := c.logger.WithField("order_uid", uid.String())
+func (c *RedisCache) Get(ctx context.Context, uid string) (*domain.Order, bool, error) {
+	log := c.logger.WithField("order_uid", uid)
 	orderKey := createKey(uid)
 
 	jsonData, err := c.redisClient.Get(ctx, orderKey).Bytes()
@@ -145,7 +144,6 @@ func (c *RedisCache) Get(ctx context.Context, uid uuid.UUID) (*domain.Order, boo
 		return nil, false, nil
 	}
 
-	// Настоящая ошибка Redis
 	log.Errorf("failed to get from cache: %v", err)
 	return nil, false, err
 }
