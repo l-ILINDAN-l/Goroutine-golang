@@ -1,4 +1,4 @@
-package http
+package thttp
 
 import (
 	"L0/internal/domain"
