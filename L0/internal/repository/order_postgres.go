@@ -311,17 +311,14 @@ func (r *PostgresRepository) GetByUID(ctx context.Context, uid string) (*domain.
 	return order, nil
 }
 
-// GetLatest получает 'limit' последних заказов из всех шардов для прогрева кеша.
 func (r *PostgresRepository) GetLatest(ctx context.Context, limit uint) ([]*domain.Order, error) {
 	log := r.logger.WithField("limit", limit)
 	log.Info("Fetching latest orders from all shards to warm up cache...")
 
-	// 1. Собираем ID последних заказов с каждого шарда.
 	allUIDs := make([]string, 0)
 	sqlQuery := `SELECT order_uid FROM orders ORDER BY date_created DESC LIMIT $1`
 
 	for shardKey, shardConn := range r.shards {
-		// Для чтения выбираем реплику, если она есть, чтобы не нагружать мастер.
 		var db *sql.DB
 		if len(shardConn.Replicas) > 0 {
 			db = shardConn.Replicas[rand.Intn(len(shardConn.Replicas))]
@@ -332,38 +329,31 @@ func (r *PostgresRepository) GetLatest(ctx context.Context, limit uint) ([]*doma
 		rows, err := db.QueryContext(ctx, sqlQuery, limit)
 		if err != nil {
 			log.WithField("shard", shardKey).Errorf("failed to query latest uids from shard: %v", err)
-			continue // Пропускаем сбойный шард, но продолжаем работу
+			continue
 		}
 
-		// Обрабатываем результаты запроса для текущего шарда.
 		for rows.Next() {
 			var uid string
 			if err := rows.Scan(&uid); err != nil {
 				log.WithField("shard", shardKey).Errorf("failed to scan uid from shard: %v", err)
-				break // Прерываем обработку этого набора строк при ошибке сканирования
+				break
 			}
 			allUIDs = append(allUIDs, uid)
 		}
 
-		// Проверяем на ошибки во время итерации
 		if err := rows.Err(); err != nil {
 			log.WithField("shard", shardKey).Errorf("error during uid rows iteration: %v", err)
 		}
 
-		// Важно закрывать rows после каждой итерации, чтобы освободить соединение.
 		rows.Close()
 	}
 
 	log.Infof("Found %d UIDs across all shards. Fetching full order data...", len(allUIDs))
 
-	// 2. Для каждого уникального ID получаем полный объект заказа.
-	// Мы переиспользуем GetByUID, который уже умеет всё правильно собирать.
 	orders := make([]*domain.Order, 0, len(allUIDs))
 	for _, uid := range allUIDs {
 		order, err := r.GetByUID(ctx, uid)
 		if err != nil {
-			// Если один из заказов не удалось получить, логируем и пропускаем,
-			// чтобы не прерывать весь процесс прогрева кеша.
 			log.WithField("order_uid", uid).Warnf("failed to get full order during cache warming: %v", err)
 			continue
 		}
