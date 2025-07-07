@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"math/rand"
@@ -31,7 +30,7 @@ type PostgresRepository struct {
 	logger   *logrus.Entry
 }
 
-func connectToDB(ctx context.Context, dsn config.DSN) (*sql.DB, error) {
+func connectToDB(ctx context.Context, dsn string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", string(dsn))
 	if err != nil {
 		return nil, err
@@ -179,7 +178,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 	return nil
 }
 
-func (r *PostgresRepository) GetByUID(ctx context.Context, uid uuid.UUID) (*domain.Order, error) {
+func (r *PostgresRepository) GetByUID(ctx context.Context, uid string) (*domain.Order, error) {
 	sqlQuery := `SELECT shard_key FROM order_shard_mapping WHERE order_uid = $1`
 	var shardKey string
 	if err := r.lookupDB.QueryRowContext(ctx, sqlQuery, uid).Scan(&shardKey); err != nil {
@@ -312,55 +311,73 @@ func (r *PostgresRepository) GetByUID(ctx context.Context, uid uuid.UUID) (*doma
 	return order, nil
 }
 
+// GetLatest получает 'limit' последних заказов из всех шардов для прогрева кеша.
 func (r *PostgresRepository) GetLatest(ctx context.Context, limit uint) ([]*domain.Order, error) {
-	r.logger.WithField("limit", limit).Info("Fetching latest orders to warm up cache...")
+	log := r.logger.WithField("limit", limit)
+	log.Info("Fetching latest orders from all shards to warm up cache...")
 
+	// 1. Собираем ID последних заказов с каждого шарда.
+	allUIDs := make([]string, 0)
 	sqlQuery := `SELECT order_uid FROM orders ORDER BY date_created DESC LIMIT $1`
-	rows, err := r.lookupDB.QueryContext(ctx, sqlQuery, limit)
-	if err != nil {
-		r.logger.Errorf("failed to query latest order uids: %v", err)
-		return nil, err
-	}
-	defer func(rows *sql.Rows) {
-		err := rows.Close()
+
+	for shardKey, shardConn := range r.shards {
+		// Для чтения выбираем реплику, если она есть, чтобы не нагружать мастер.
+		var db *sql.DB
+		if len(shardConn.Replicas) > 0 {
+			db = shardConn.Replicas[rand.Intn(len(shardConn.Replicas))]
+		} else {
+			db = shardConn.Primary
+		}
+
+		rows, err := db.QueryContext(ctx, sqlQuery, limit)
 		if err != nil {
-			r.logger.Errorf("failed to close rows: %v", err)
+			log.WithField("shard", shardKey).Errorf("failed to query latest uids from shard: %v", err)
+			continue // Пропускаем сбойный шард, но продолжаем работу
 		}
-	}(rows)
 
-	var orderUIDs []uuid.UUID
-	for rows.Next() {
-		var uid uuid.UUID
-		if err := rows.Scan(&uid); err != nil {
-			r.logger.Errorf("failed to scan order uid during cache warming: %v", err)
-			return nil, err
+		// Обрабатываем результаты запроса для текущего шарда.
+		for rows.Next() {
+			var uid string
+			if err := rows.Scan(&uid); err != nil {
+				log.WithField("shard", shardKey).Errorf("failed to scan uid from shard: %v", err)
+				break // Прерываем обработку этого набора строк при ошибке сканирования
+			}
+			allUIDs = append(allUIDs, uid)
 		}
-		orderUIDs = append(orderUIDs, uid)
-	}
-	if err := rows.Err(); err != nil {
-		r.logger.Errorf("error during latest order uids iteration: %v", err)
-		return nil, err
+
+		// Проверяем на ошибки во время итерации
+		if err := rows.Err(); err != nil {
+			log.WithField("shard", shardKey).Errorf("error during uid rows iteration: %v", err)
+		}
+
+		// Важно закрывать rows после каждой итерации, чтобы освободить соединение.
+		rows.Close()
 	}
 
-	orders := make([]*domain.Order, 0, len(orderUIDs))
-	for _, uid := range orderUIDs {
+	log.Infof("Found %d UIDs across all shards. Fetching full order data...", len(allUIDs))
+
+	// 2. Для каждого уникального ID получаем полный объект заказа.
+	// Мы переиспользуем GetByUID, который уже умеет всё правильно собирать.
+	orders := make([]*domain.Order, 0, len(allUIDs))
+	for _, uid := range allUIDs {
 		order, err := r.GetByUID(ctx, uid)
 		if err != nil {
-			r.logger.WithField("order_uid", uid).Warnf("failed to get full order during cache warming: %v", err)
+			// Если один из заказов не удалось получить, логируем и пропускаем,
+			// чтобы не прерывать весь процесс прогрева кеша.
+			log.WithField("order_uid", uid).Warnf("failed to get full order during cache warming: %v", err)
 			continue
 		}
 		orders = append(orders, order)
 	}
 
-	r.logger.Infof("cache warming complete. Fetched %d orders.", len(orders))
+	log.Infof("Cache warming complete. Fetched %d full orders.", len(orders))
 	return orders, nil
 }
-
 func (r *PostgresRepository) Close() {
 	if err := r.lookupDB.Close(); err != nil {
 		r.logger.Errorf("error closing lookup db: %v", err)
 	}
-	
+
 	for key, conn := range r.shards {
 		if err := conn.Primary.Close(); err != nil {
 			r.logger.Errorf("error closing primary for shard %s: %v", key, err)
