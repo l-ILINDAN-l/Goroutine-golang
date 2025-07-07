@@ -4,25 +4,30 @@ import (
 	"L0/internal/domain"
 	"L0/internal/metrics"
 	"context"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-type OrderService struct {
+type OrderService interface {
+	ProcessNewOrder(ctx context.Context, order *domain.Order) error
+	GetOrderByUID(ctx context.Context, uid string) (*domain.Order, error)
+	WarmUpCache(ctx context.Context, limit uint) error
+}
+
+type orderService struct {
 	repo   domain.OrderRepository
 	cache  domain.Cache
 	logger *logrus.Entry
 }
 
-func NewOrderService(repo domain.OrderRepository, cache domain.Cache, logger *logrus.Entry) *OrderService {
-	return &OrderService{
+func NewOrderService(repo domain.OrderRepository, cache domain.Cache, logger *logrus.Entry) OrderService {
+	return &orderService{
 		repo:   repo,
 		cache:  cache,
 		logger: logger,
 	}
 }
 
-func (s *OrderService) ProcessNewOrder(ctx context.Context, order *domain.Order) error {
+func (s *orderService) ProcessNewOrder(ctx context.Context, order *domain.Order) error {
 	log := s.logger.WithField("uid", order.OrderUID)
 	log.Info("processing new order")
 
@@ -35,7 +40,7 @@ func (s *OrderService) ProcessNewOrder(ctx context.Context, order *domain.Order)
 	return nil
 }
 
-func (s *OrderService) GetOrderByUID(ctx context.Context, uid uuid.UUID) (*domain.Order, error) {
+func (s *orderService) GetOrderByUID(ctx context.Context, uid string) (*domain.Order, error) {
 	log := s.logger.WithField("order_uid", uid)
 	log.Info("getting order by uid")
 
@@ -49,7 +54,7 @@ func (s *OrderService) GetOrderByUID(ctx context.Context, uid uuid.UUID) (*domai
 	return order, nil
 }
 
-func (s *OrderService) WarmUpCache(ctx context.Context, limit uint) error {
+func (s *orderService) WarmUpCache(ctx context.Context, limit uint) error {
 	s.logger.Info("starting cache warm-up")
 
 	orders, err := s.repo.GetLatest(ctx, limit)
