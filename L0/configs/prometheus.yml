@@ -4,4 +4,4 @@ global:
 scrape_configs:
   - job_name: "order-microservices"
     static_configs:
-      - targets: ['app"8081']
+      - targets: ['app:8081']

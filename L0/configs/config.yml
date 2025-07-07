@@ -6,7 +6,7 @@ redis:
 
 kafka:
   brokers:
-    - "tkafka:9092"
+    - "kafka:9092"
   topic: "orders"
 
 postgres:
@@ -14,8 +14,8 @@ postgres:
 
   shards:
     "1":
-      primary: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-shard1-primary:5432/orders_db?sslmode=disable"
+      primary: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-shard1:5432/orders_db?sslmode=disable"
       replicas: []
     "2":
-      primary: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-shard2-primary:5432/orders_db?sslmode=disable"
+      primary: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-shard2:5432/orders_db?sslmode=disable"
       replicas: []
