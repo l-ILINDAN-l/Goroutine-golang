@@ -1,0 +1,42 @@
+{
+  "order_uid": "ILSEA1IHIBFKPDHNJTA",
+  "shardkey": "1",
+  "track_number": "WBILMTESTTRACK",
+  "entry": "some_entry",
+  "delivery": {
+    "name": "John Doe",
+    "phone": "+1234567890",
+    "zip": "123456",
+    "city": "City",
+    "address": "Street 123",
+    "region": "Region",
+    "email": "john.doe@example.com"
+  },
+  "payment": {
+    "transaction": "txn100",
+    "request_id": "",
+    "currency": "USD",
+    "provider": "card",
+    "amount": 100,
+    "payment_dt": 1637907740,
+    "bank": "Bank",
+    "delivery_cost": 10,
+    "goods_total": 90,
+    "custom_fee": 0
+  },
+  "items": [
+    {
+      "chrt_id": 9934931,
+      "track_number": "TRACK101",
+      "price": 100,
+      "rid": "RID100",
+      "name": "Item Name",
+      "sale": 5,
+      "size": "L",
+      "total_price": 95,
+      "nm_id": 123456,
+      "brand": "Brand",
+      "status": 202
+    }
+  ]
+}

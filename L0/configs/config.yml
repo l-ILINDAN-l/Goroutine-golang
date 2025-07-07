@@ -1,0 +1,21 @@
+server:
+  port: "8081"
+
+redis:
+  addr: "redis:6379"
+
+kafka:
+  brokers:
+    - "kafka:9092"
+  topic: "orders"
+
+postgres:
+  lookup_db_dsn: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-lookup:5432/orders_db?sslmode=disable"
+
+  shards:
+    "1":
+      primary: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-shard1:5432/orders_db?sslmode=disable"
+      replicas: []
+    "2":
+      primary: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-shard2:5432/orders_db?sslmode=disable"
+      replicas: []
