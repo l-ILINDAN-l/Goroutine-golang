@@ -1,49 +1,47 @@
 package config
 
 import (
-	// "database/sql"
 	"github.com/spf13/viper"
 	"log"
+	"os"
 )
 
-type DSN string
-
 type PostgresShardConfig struct {
-	Primary  DSN   `yaml:"primary"`
-	Replicas []DSN `yaml:"replicas"`
+	Primary  string   `mapstructure:"primary"`
+	Replicas []string `mapstructure:"replicas"`
 }
 
 type PostgresConfig struct {
-	LookupDbDsn DSN                            `yaml:"lookup_db_dsn"`
-	Shards      map[string]PostgresShardConfig `yaml:"shards"`
+	LookupDbDsn string                         `mapstructure:"lookup_db_dsn"`
+	Shards      map[string]PostgresShardConfig `mapstructure:"shards"`
 }
 
 type RedisConfig struct {
-	Addr string `yaml:"addr"`
+	Addr string `mapstructure:"addr"`
 }
 
 type KafkaConfig struct {
-	Brokers []string `yaml:"brokers"`
-	Topic   string   `yaml:"topic"`
+	Brokers []string `mapstructure:"brokers"`
+	Topic   string   `mapstructure:"topic"`
 }
 
 type ServerConfig struct {
-	Port string `yaml:"port"`
+	Port string `mapstructure:"port"`
 }
 
 type Config struct {
-	Postgres PostgresConfig `yaml:"postgres"`
-	Redis    RedisConfig    `yaml:"redis"`
-	Kafka    KafkaConfig    `yaml:"tkafka"`
-	Server   ServerConfig   `yaml:"server"`
+	Postgres PostgresConfig `mapstructure:"postgres"`
+	Redis    RedisConfig    `mapstructure:"redis"`
+	Kafka    KafkaConfig    `mapstructure:"kafka"`
+	Server   ServerConfig   `mapstructure:"server"`
 }
 
 func MustLoad() *Config {
 	v := viper.New()
 
 	v.AutomaticEnv()
-	v.AddConfigPath("./configs") // Указываем путь
-	v.SetConfigName("config")    // Указываем имя файла без расширения
+	v.AddConfigPath("./configs")
+	v.SetConfigName("config")
 
 	if err := v.ReadInConfig(); err != nil {
 		log.Fatalf("error reading config file: %v", err)
@@ -52,6 +50,20 @@ func MustLoad() *Config {
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		log.Fatalf("error unmarshaling config: %v", err)
+	}
+
+	log.Printf("DEBUG: POSTGRES_USER is '%s'", os.Getenv("POSTGRES_USER"))
+	log.Printf("DEBUG: POSTGRES_PASSWORD is '%s'", os.Getenv("POSTGRES_PASSWORD"))
+
+	cfg.Postgres.LookupDbDsn = os.ExpandEnv(cfg.Postgres.LookupDbDsn)
+	for key, shard := range cfg.Postgres.Shards {
+		shard.Primary = os.ExpandEnv(shard.Primary)
+
+		for i, replica := range shard.Replicas {
+			shard.Replicas[i] = os.ExpandEnv(replica)
+		}
+
+		cfg.Postgres.Shards[key] = shard
 	}
 
 	return &cfg
