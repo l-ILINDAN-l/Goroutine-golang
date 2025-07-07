@@ -1,12 +1,11 @@
 package domain
 
 import (
-	"github.com/google/uuid"
 	"time"
 )
 
 type Order struct {
-	OrderUID          uuid.UUID `json:"order_uid"`
+	OrderUID          string    `json:"order_uid"`
 	TrackNumber       string    `json:"track_number"`
 	Entry             string    `json:"entry"`
 	Delivery          *Delivery `json:"delivery"`
