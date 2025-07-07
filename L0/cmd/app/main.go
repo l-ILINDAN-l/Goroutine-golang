@@ -5,8 +5,8 @@ import (
 	"L0/internal/cache"
 	"L0/internal/config"
 	"L0/internal/repository"
-	thttp "L0/internal/transport/http"
-	tkafka "L0/internal/transport/tkafka"
+	"L0/internal/transport/thttp"
+	"L0/internal/transport/tkafka"
 	"context"
 	"errors"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -39,6 +39,7 @@ func run() error {
 	postgresRepo, err := repository.NewPostgresRepository(ctx, &cfg.Postgres, logger.WithField("component", "repository"))
 	if err != nil {
 		logger.Fatalf("failed to create postgres repository: %v", err)
+
 		return err
 	}
 
@@ -59,15 +60,15 @@ func run() error {
 		"group.id":           "order_service_consumer",
 		"auto.offset.reset":  "earliest",
 		"enable.auto.commit": false,
-	}, *orderService, logger.WithField("component", "kafka_consumer"))
+	}, orderService, logger.WithField("component", "kafka_consumer"))
 
 	if err != nil {
 		logger.Fatalf("failed to create tkafka consumer: %v", err)
 		return err
 	}
 
-	httpServer := thttp.NewHTTPServer(gin.Default(), *orderService, logger.WithField("component", "http_server"))
-	httpServer.SetupRoutes() // Настраиваем роуты
+	httpServer := thttp.NewHTTPServer(gin.Default(), orderService, logger.WithField("component", "http_server"))
+	httpServer.SetupRoutes()
 
 	go func() {
 		err := orderService.WarmUpCache(ctx, 1000)
@@ -80,7 +81,7 @@ func run() error {
 
 	go func() {
 		if err := httpServer.Run(ctx, cfg.Server.Port); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Errorf("http server error: %v", err)
+			logger.Errorf("thttp server error: %v", err)
 		}
 	}()
 
@@ -91,8 +92,8 @@ func run() error {
 	logger.Info("shutting down service...")
 
 	kafkaConsumer.Close()
-	cacheRepo.Close()    // Закроет Redis
-	postgresRepo.Close() // Закроет все подключения к Postgres
+	cacheRepo.Close()
+	postgresRepo.Close()
 
 	logger.Info("service stopped")
 	return nil
