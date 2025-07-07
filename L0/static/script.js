@@ -2,9 +2,7 @@ const orderInput = document.getElementById('orderIdInput');
 const searchButton = document.getElementById('searchButton');
 const resultOutput = document.getElementById('resultOutput');
 
-// Слушаем событие ввода в поле
 orderInput.addEventListener('input', () => {
-    // Если в поле есть текст, делаем кнопку активной, иначе - неактивной
     if (orderInput.value.trim() !== '') {
         searchButton.disabled = false;
     } else {
@@ -21,7 +19,7 @@ searchButton.addEventListener('click', async () => {
     }
 
     try {
-        const response = await fetch(`/order/${orderId}`);
+        const response = await fetch(`/api/v1/order/${orderId}`);
 
         const data = await response.json();
 

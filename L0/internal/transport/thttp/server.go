@@ -44,9 +44,18 @@ func PrometheusMiddleware() gin.HandlerFunc {
 
 func (s *Server) SetupRoutes() {
 	s.serverEngine.Use(PrometheusMiddleware())
-	s.serverEngine.GET("/order/:order_uid", s.getOrderHandler)
+	api := s.serverEngine.Group("/api/v1")
+	{
+		api.GET("/order/:order_uid", s.getOrderHandler)
+	}
+
 	s.serverEngine.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	s.serverEngine.StaticFS("/", http.Dir("./static"))
+
+	s.serverEngine.GET("/", func(c *gin.Context) {
+		c.File("./static/index.html")
+	})
+
+	s.serverEngine.StaticFS("/static", http.Dir("./static"))
 }
 
 func (s *Server) Run(ctx context.Context, port string) error {

@@ -2,7 +2,6 @@ package http
 
 import (
 	"L0/internal/domain"
-	"github.com/google/uuid"
 	"time"
 )
 
@@ -35,9 +34,9 @@ type ItemResponse struct {
 }
 
 type OrderResponse struct {
-	OrderUID    uuid.UUID `json:"order_uid"`
-	TrackNumber string    `json:"track_number"`
-	Entry       string    `json:"entry"`
+	OrderUID    string `json:"order_uid"`
+	TrackNumber string `json:"track_number"`
+	Entry       string `json:"entry"`
 
 	Delivery *DeliveryResponse `json:"delivery"`
 	Payment  *PaymentResponse  `json:"payment"`
