@@ -1,6 +1,7 @@
 # --- СТАДИЯ 1: Сборщик ---
-# Меняем образ на Debian-based (bookworm) для совместимости с C-библиотеками
 FROM golang:1.24.3-bookworm AS builder
+
+RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 WORKDIR /app
 
@@ -14,20 +15,32 @@ RUN go build -o /app/main ./cmd/app/main.go
 
 
 # --- СТАДИЯ 2: Финальный образ ---
-# Финальный образ можно оставить на Alpine, он маленький
-FROM alpine:latest
 
-# Устанавливаем только саму библиотеку librdkafka для запуска
-RUN apk add --no-cache librdkafka
 
-# ... остальной код с созданием пользователя и копированием ...
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y kcat && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+
+COPY docker-entrypoint.sh .
+COPY --from=builder /go/bin/migrate /usr/local/bin/
+
+COPY --from=builder /app/main .
+
+COPY --from=builder /app/migrations ./migrations
+
+# Копируем бинарный файл и нужные папки
 COPY --from=builder /app/main .
 COPY --from=builder /app/configs ./configs
 COPY --from=builder /app/static ./static
 
-# Устанавливаем пользователя после всех операций с файлами
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Создаём пользователя с ограниченными правами
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 USER appuser
 
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+
+# Указываем команду для запуска
 CMD ["./main"]
+
