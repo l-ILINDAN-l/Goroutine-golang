@@ -4,14 +4,29 @@ import (
 	"fmt"
 )
 
+func interSection(slices ...[]int) []int {
+	hashMap := make(map[int]int)
+	for _, slice := range slices {
+		nonDuplicate := make(map[int]struct{})
+		for _, value := range slice {
+			nonDuplicate[value] = struct{}{}
+		}
+		for key := range nonDuplicate {
+			hashMap[key] += 1
+		}
+	}
+	result := make([]int, 0)
+	for key, value := range hashMap {
+		if value == len(slices) {
+			result = append(result, key)
+		}
+
+	}
+	return result
+}
+
 func main() {
-	// Solve O(n)
-	tempatures := []float64{-25.4, -27.0, 13.0, 19.0, 15.5, 24.5, -21.0, 32.5}
-	groups := make(map[int][]float64)
-	for _, num := range tempatures {
-		groups[int(num/10)*10] = append(groups[int(num/10)*10], num)
-	}
-	for key, val := range groups {
-		fmt.Println(key, val)
-	}
+	slice1 := []int{1, 2, 3}
+	slice2 := []int{2, 3, 4}
+	fmt.Println(interSection(slice1, slice2))
 }
