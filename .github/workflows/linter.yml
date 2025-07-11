@@ -2,9 +2,8 @@ name: GoLinterCheck
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
+
 
 jobs:
   lint:
@@ -30,6 +29,5 @@ jobs:
           
             echo "==> Checking module in $dir"
           
-            # Эта команда должна быть на новой строке
             (cd "$dir" && staticcheck ./...)
           done
