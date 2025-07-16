@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -336,11 +335,6 @@ func extractMonth(line string) int {
 	}
 	month := strings.ToLower(line[:3])
 	return monthMap[month]
-}
-
-func extractNumeric(line string) float64 {
-	numeric, _ := strconv.ParseFloat(line, 64)
-	return numeric
 }
 
 func parseHumanNumeric(line string) (*big.Int, error) {
