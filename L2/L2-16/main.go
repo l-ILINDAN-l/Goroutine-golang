@@ -1,1 +1,5 @@
-package L2_16
+package main
+
+func main() {
+
+}

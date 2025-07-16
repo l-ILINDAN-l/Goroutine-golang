@@ -1,1 +1,5 @@
-package L2_12
+package main
+
+func main() {
+
+}

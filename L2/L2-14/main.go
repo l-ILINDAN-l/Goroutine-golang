@@ -10,7 +10,7 @@ func or(channels ...<-chan interface{}) <-chan interface{} {
 	resChan := make(chan interface{})
 	onceCloseChan := sync.Once{}
 
-	//ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
 	for _, channel := range channels {
 		go func(channel <-chan interface{}) {
 			for {
@@ -18,14 +18,11 @@ func or(channels ...<-chan interface{}) <-chan interface{} {
 				case <-channel:
 					onceCloseChan.Do(func() {
 						close(resChan)
-						//cancel()
+						close(done)
 					})
 					return
-					// Хотел добавить сюда закрытие горутин других каналов, если хотя бы одна закрылась,
-					// но линтер ругался при использовании контекста, что cancel() может в теоретическом случае не вызваться.
-					// Если подскажите, как нерекурсивно напить "идеально", буду благодарен
-					//case <-ctx.Done():
-					//	return
+				case <-done:
+					return
 				}
 			}
 		}(channel)
