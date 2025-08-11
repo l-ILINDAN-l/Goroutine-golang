@@ -1,0 +1,8 @@
+postgres-data
+
+.git
+
+.idea
+.vscode
+
+.env

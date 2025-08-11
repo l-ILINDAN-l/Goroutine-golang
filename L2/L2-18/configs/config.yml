@@ -1,0 +1,8 @@
+server:
+  port: "8081"
+
+redis:
+  addr: "redis:6379"
+
+postgres:
+  events: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
